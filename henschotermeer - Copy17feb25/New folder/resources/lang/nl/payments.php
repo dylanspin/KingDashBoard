@@ -1,0 +1,35 @@
+<?php
+
+return
+[
+    'payments' => 'Betalingen',
+    't_amount' => 'Totale betalingen :',
+    't_bookings' => 'Totale boekingen :',
+    'today_amount' => 'Vandaag bedrag :',
+    'today_bookings' => 'Vandaag boekingen :',
+    'name' => 'Naam',
+    'email' => 'E-mail',
+    'type' => 'Type',
+    'no' => 'Nr.',
+    'dob' => 'Geboortedatum',
+    'date' => 'Datum',
+    'vehicle' => 'Voertuig',
+    'amount' => 'Bedrag',
+    'arrival' => 'Aankomst',
+    'departure' => 'Vertrek',
+    'person_payment_transactions' => 'Betalingstransactie per persoon',
+    'vehicle_payment_transactions' => 'Voertuig Betalingstransactie',
+    'all_transactions' => 'Alle Transacties',
+    'device' => 'Apparaat',
+    'quantity' => 'Aantal stuks',
+    'transaction_details' => 'E-Journal',
+    'customer' => 'Klant',
+    'online_payment' => 'Online Betaling',
+    'status' => 'Status',
+    'payment_terminal' => 'Betalings Terminal',
+    'booking_not_found' => 'Boeking niet gevonden.',
+    'location_not_found' => 'Locatie bestaat niet.',
+    'ticket_sent' => 'Ticket verzonden met succes.',
+    'ticket_delete' => 'Ticket succesvol verwijderen.',
+    'purchase_time' => 'Aankoop'
+];

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{{$pdf_title}}</title>
+        <!--<link href="{{ URL::asset('css/home.css') }}"  rel="stylesheet"/>-->
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <!--        <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">-->
+        <style type="text/css">
+            body {
+                position: relative;
+                font-family: 'Helvetica', sans-serif;
+            }
+            .logo {
+                padding:0px;
+                width:100%;
+                text-align: left;
+                clear:both;
+            }
+            .logo img{
+                width:50%;
+                font-size:36px;
+                font-weight:bold;
+                float:left;
+            }
+            .title{
+                padding-top:0px;
+                width:100%;
+                background-color: #456bb3;
+                clear:both;
+            }
+            .title .name{
+                height:40px;
+                border-right: 1px solid white;
+                font-family: 'Helvetica', sans-serif;
+                color: white; 
+                background-color: #456bb3;
+                padding: 20px 0px 10px 0px; 
+                width: 50%; 
+                float: left;
+                text-align: center
+            }
+            .title .message{
+                background-color: #456bb3; 
+                font-family: 'Helvetica', sans-serif;
+                height:40px;
+                color: white;
+                padding: 20px 0px 10px 0px;
+                width: 50%; 
+                float: left; 
+                text-align: center
+            }
+            .detail_section{
+                display: flex;
+                width:100%;
+                padding-top: 20px;
+                clear:both;
+            }
+            .detail_section_con{
+                font-size:14px;
+                height:260px;
+                width: 50%;
+                border-right:2px dotted #CDCDCD;
+                float: left;
+                margin-right:0px; 
+            }
+            .detail_section_con div{
+                clear:both;
+                height:20px;
+                padding-left:20px;
+                margin-bottom: 10px;
+            }
+            .location_title{
+                text-align:center; 
+                width: 100%; 
+                clear:both; 
+                margin-bottom: 15px; 
+                font-family: 'Helvetica', sans-serif;
+            }
+            .qr_code_con{
+                text-align: center;
+                width: 50%;
+                float: right;
+                clear: both;
+            }
+            .qr_code_con .qr_code_img{
+                margin-top: -70px;
+                float: left;
+                clear: both;
+            }
+            .qr_code_con .qr_code_img img{
+                margin-left: 25%;
+                vertical-align: middle;
+            }
+            .qr_code_con .folding_instruction{
+                float: left;
+                margin-top: 130px;
+                clear: both;
+            }
+            .qr_code_con .folding_instruction img{
+                margin-left: 25%;
+                vertical-align: middle;
+                height: 70px;
+                width: 165px;
+            }
+            .description_sec{
+                clear:both;
+                width: 100%;
+                font-family: 'Helvetica', sans-serif;
+            }
+            .description_sec .left_sec{
+                padding: 5px 0px; 
+                width: 50%; 
+                float: left;
+                margin-bottom: 20px;
+            }
+            .description_sec .right_sec{
+                padding: 5px 0px;
+                width: 40%;
+                float: right;
+            }
+            .location_image_con{
+                width:100%;
+                margin-left: auto;
+                margin-right: auto;
+                padding-top:20px;
+            }
+            .location_image_con img{
+                margin-bottom:20px;
+                height:170px; 
+                float:right;
+            }
+            .location_map_con{
+                width:100%;
+                margin-left: auto;
+                margin-right: auto;
+                padding-top:200px;
+            }
+            .location_map_con img{
+                margin-bottom:20px; 
+                float:right;
+            }
+            .parking_shop_con{
+                width:100%;
+                margin-left: auto;
+                margin-right: auto;
+                padding-top:400px;
+            }
+            .parking_shop_con img{
+                width:170px;
+                margin-bottom:20px; 
+                float:right;
+            }
+            .font-size-12{
+                font-size:12px;
+                font-family: 'Helvetica', sans-serif;
+            }
+            .footer{
+                width:100%;
+                clear:both;
+            }
+            .footer .footer_text{
+                font-size:14px;
+                font-family: 'Helvetica', sans-serif;
+                width: 60%;
+                float: left;
+            }
+            .footer .footer_text span,.footer .footer_text h3{
+                font-family: 'Helvetica', sans-serif;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="logo" style="text-align:center;">
+            <img 
+                src="{{ URL::asset('pdf_images/'.env('LOCATION_LOGO')) }}" 
+                alt="Parkingshop"  />
+
+        </div>
+        <div class='detail_section' style="">
+            <div class="detail_section_con" style="">
+                <h3 class="location_title" style="">{{ $location_address }}</h3>
+                <div style="width:100%; margin-top: 30px;">
+                    <span style="width:20%;text-align:left;float:left;line-height:1px;">
+                        <b>@lang('pdf.type')</b>
+                    </span>
+                    <span style="width:80%;text-align:right;float:right;padding-right:10px;line-height:1px;">{{ $title }}</span>
+                </div>
+                @if($vehicle_number_plate)
+                <div style="width:100%;">
+                    <span style="width:50%;text-align:left;float:left;line-height:1px;">
+                        <b>@lang('pdf.vehicle')</b>
+                    </span>
+                    <span style="width:50%;text-align:right;float:right;padding-right:10px;line-height:1px;">{{ $vehicle_number_plate }}</span>
+                </div>
+                @endif
+                @if($dob)
+                <div style="width:100%;">
+                    <span style="width:50%;text-align:left;float:left;line-height:1px;">
+                        <b>@lang('pdf.dob')</b>
+                    </span>
+                    <span style="width:50%;text-align:right;float:right;padding-right:10px;line-height:1px;">{{ $dob }}</span>
+                </div>
+                @endif
+                <div style="width:100%;">
+                    <span style="width:80%;text-align:left;float:left;line-height:1px;">
+                        <b>@lang('pdf.arrival_possible')
+                            <?php if ($current_locale == 'en') {
+                                ?>
+                                8:30 AM  <?php
+                            } else {
+                                ?>
+                                8:30 uur
+                                <?php
+                            }
+                            ?>
+                        </b>
+                    </span>
+                    <span style="width:20%;text-align:right;float:right;padding-right:10px;line-height:1px;">{{ $checkin_time }}</span>
+                </div>
+                <div style="width:100%;">
+                    <span style="width:60%;text-align:left;float:left;line-height:1px;">
+                        <b>@lang('pdf.departure_before')</b>
+                    </span>
+                    <span style="width:40%;text-align:right;float:right;padding-right:10px;line-height:1px;">{{ $checkout_time }}</span>
+                </div>
+
+            </div>
+            <div class="qr_code_con" style="">
+                <div class="qr_code_img">
+                    <img style="" src="data:image/png;base64,{{ $qr_code_200 }}">
+                </div>
+                <div class="folding_instruction">
+                    <img src="{{ URL::asset('pdf_images/folding_instructions.png') }}" alt="FoldingInstruction">
+                    <p style="text-align:center;">@lang('pdf.ticket_folding_instructions')</p>
+                </div>
+            </div>
+        </div>
+        <div class="title" >
+            <div class="name" >
+                @if(!empty($user_name))
+                @lang('pdf.hi') <b>{{ $user_name }}</b>
+                @else
+                @lang('pdf.hi')
+                @endif
+            </div>
+            <div class="message"  style="">
+                {{ $pdf_title }}
+            </div>
+        </div> 
+        <div class="description_sec" style="">
+            <div class="left_sec">
+                <h3>@lang('pdf.DESCRIPTION')</h3>
+                <div class="font-size-12">
+                    {{ $location_description }} 
+                </div>
+                <?php if ($how_to_use) { ?> 
+                    <h3>@lang('pdf.HOW_TO_REDEEM')</h3>
+                    <div class="font-size-12" >
+                        {{ $how_to_use }}
+                    </div>
+                <?php } ?>
+            </div>
+            <div class="right_sec">
+                <div class="location_image_con" >
+                    <img  src="<?php echo URL::asset('pdf_images/' . $parking_location_image_pdf) ?>">
+                </div> 
+                <div class="location_map_con" >
+                    <img src="https://maps.googleapis.com/maps/api/staticmap?center={{ $latitude }},{{ $longitude }}&markers=color:red%7Clabel:C%7C{{ $latitude }},{{ $longitude }}&zoom=14&size=170x170&key=AIzaSyAVELSX6ErxUO5vgrxO_z9SHZyf_RvdP3w"/>
+                </div>  
+                <div class="parking_shop_con" style="text-align:center;" >
+                    <img 
+                        style="width:40%;" 
+                        src="{{url('/pdf_images/logo.png')}}" />
+                </div> 
+            </div>
+        </div>
+        <div class="footer" >
+            <div class="footer_text">
+                <h3> @lang('pdf.regards') </h3>
+                <span>Henschotermeer</span><br>
+                <span>033-2862919</span><br>  
+            </div>
+        </div>
+    </body>
+</html>

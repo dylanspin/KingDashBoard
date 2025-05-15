@@ -1,0 +1,523 @@
+<?php
+
+namespace App\Http\Controllers\Settings;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Request;
+use GuzzleHttp\Client;
+
+class BarcodeSettings_Backup extends Controller {
+
+    public function __construct() {
+        
+    }
+
+    public function is_valid_barcode(Request $request, $key, $id, $barcode) {
+        $settings = new Settings();
+        $verify_booking = new VerifyBookings();
+        $valid_settings = $settings->is_valid_call($key, $id);
+        if (!$valid_settings) {
+            \Illuminate\Support\Facades\Session::put('error_message', 'Invalid Access');
+            $message = $verify_booking->get_error_message('unknown');
+            return array(
+                'status' => 1,
+                'access_status' => 'error',
+                'od_sent' => $settings->send_message_od($id, $message, 'unknown'),
+                'message' => $message,
+                'data' => FALSE,
+            );
+        }
+
+        if ($valid_settings->available_device_id == 2) {
+            return $this->is_valid_person_booking($barcode, $valid_settings);
+        }
+        $vip_barcode = \App\Barcode::where('barcode', $barcode)
+                ->orderBy('created_at', 'desc')
+                ->first();
+        if ($vip_barcode) {
+            $is_barcode_at_location = $this->is_barcode_at_location($barcode);
+            if ($is_barcode_at_location) {
+                \Illuminate\Support\Facades\Session::put('error_message', 'You are already on location!');
+                $message = $verify_booking->get_error_message('anti_passback_message_barcode');
+                return array(
+                    'status' => 1,
+                    'access_status' => 'error',
+                    'od_sent' => $settings->send_message_od($id, $message, 'vip'),
+                    'message' => $message,
+                    'data' => FALSE,
+                );
+            }
+            $booking = $this->add_barcode_booking($barcode, $vip_barcode);
+            if (!$booking) {
+
+                \Illuminate\Support\Facades\Session::put('error_message', 'Sorry You do not have access');
+                $message = $verify_booking->get_error_message('unauthorized');
+                return array(
+                    'status' => 1,
+                    'access_status' => 'error',
+                    'od_sent' => $settings->send_message_od($id, $message, 'vip'),
+                    'message' => $message,
+                    'data' => FALSE,
+                );
+            }
+            $valid_passback = $verify_booking->is_valid_antipassback($booking, $id);
+            if (!$valid_passback['status']) {
+
+                \Illuminate\Support\Facades\Session::put('error_message', 'You are already on location!');
+                $message = $verify_booking->get_error_message('anti_passback_message_barcode', '');
+                return array(
+                    'status' => 1,
+                    'access_status' => 'denied',
+                    'od_sent' => $settings->send_message_od($id, $message, 'vip'),
+                    'message' => $message,
+                    'data' => FALSE,
+                );
+            }
+            $message = $verify_booking->get_error_message('welcome_entrance');
+            if ($vip_barcode->message != NULL) {
+                $message = $vip_barcode->message;
+            }
+            return array(
+                'status' => 1,
+                'access_status' => 'allow',
+                'od_sent' => $settings->send_message_od($id, $message, 'vip'),
+                'message' => $message,
+                'data' => $booking->id,
+                'type' => 'vip',
+            );
+        }
+        $location = new LocationSettings();
+        $location_details = $location->get_location();
+        if (!$location_details) {
+            \Illuminate\Support\Facades\Session::put('error_message', 'Invalid');
+            $message = $verify_booking->get_error_message('unauthorized');
+            return array(
+                'status' => 1,
+                'access_status' => 'denied',
+                'od_sent' => $settings->send_message_od($id, $message, 'rejected'),
+                'message' => $message,
+                'data' => FALSE,
+            );
+        }
+        if ($location_details->barcode_series == NULL) {
+            \Illuminate\Support\Facades\Session::put('error_message', 'Sorry, You do not have access!');
+            $message = $verify_booking->get_error_message('unauthorized');
+            return array(
+                'status' => 1,
+                'access_status' => 'denied',
+                'od_sent' => $settings->send_message_od($id, $message, 'rejected'),
+                'message' => $message,
+                'data' => FALSE,
+            );
+        }
+        $barcode_range = explode('-', $location_details->barcode_series);
+
+        if (!is_array($barcode_range) || count($barcode_range) != 2) {
+
+            \Illuminate\Support\Facades\Session::put('error_message', 'Sorry, You do not have access!');
+            $message = $verify_booking->get_error_message('unauthorized');
+            return array(
+                'status' => 1,
+                'access_status' => 'denied',
+                'od_sent' => $settings->send_message_od($id, $message, 'rejected'),
+                'message' => $message,
+                'data' => FALSE,
+            );
+        }
+
+
+        if ($barcode >= $barcode_range[0] && $barcode <= $barcode_range[1]) {
+
+            $is_barcode_at_location = $this->is_barcode_at_location($barcode);
+            if ($is_barcode_at_location) {
+
+                \Illuminate\Support\Facades\Session::put('error_message', 'You are already on location!');
+                $message = $verify_booking->get_error_message('unauthorized');
+                return array(
+                    'status' => 1,
+                    'access_status' => 'denied',
+                    'od_sent' => $settings->send_message_od($id, $message, 'rejected'),
+                    'message' => $message,
+                    'data' => FALSE,
+                );
+            }
+
+
+            $booking_barcode = $this->add_barcode_booking($barcode);
+            if (!$booking_barcode) {
+                \Illuminate\Support\Facades\Session::put('error_message', 'Sorry You do not have access!');
+                $message = $verify_booking->get_error_message('unauthorized');
+                return array(
+                    'status' => 1,
+                    'access_status' => 'denied',
+                    'od_sent' => $settings->send_message_od($id, $message, 'rejected'),
+                    'message' => $message,
+                    'data' => FALSE,
+                );
+            }
+            $booking_id = $booking_barcode->id;
+
+            $valid_passback = $verify_booking->is_valid_antipassback($booking_barcode, $id);
+            if (!$valid_passback['status']) {
+
+                \Illuminate\Support\Facades\Session::put('error_message', 'You are already on location!');
+                $message = $verify_booking->get_error_message('anti_passback_message_barcode', '');
+                return array(
+                    'status' => 1,
+                    'access_status' => 'denied',
+                    'od_sent' => $settings->send_message_od($id, $message, 'normal'),
+                    'message' => $message,
+                    'data' => FALSE,
+                );
+            }
+
+            \Illuminate\Support\Facades\Session::put('error_message', 'Welcome');
+            $message = $verify_booking->get_error_message('welcome_entrance', '');
+            return array(
+                'status' => 1,
+                'access_status' => 'allow',
+                'od_sent' => $settings->send_message_od($id, $message, 'normal'),
+                'message' => $message,
+                'data' => $booking_id,
+            );
+        }
+        \Illuminate\Support\Facades\Session::put('error_message', 'Sorry You do not have access!');
+        $message = $verify_booking->get_error_message('unauthorized_whitelist');
+        return array(
+            'status' => 1,
+            'access_status' => 'denied',
+            'od_sent' => $settings->send_message_od($id, $message, 'rejected'),
+            'message' => $message,
+            'data' => FALSE,
+        );
+    }
+
+    function is_valid_person_booking($barcode, $device_info) {
+        $settings = new Settings();
+        $verify_booking = new VerifyBookings();
+        try {
+            $booking_details = \App\Bookings::where([
+                        ['id', intval($barcode)]
+                    ])
+                    ->where('type', 6)
+                    ->where('checkin_time', '<=', date('Y-m-d H:i:s'))
+                    ->where('checkout_time', '>', date('Y-m-d H:i:s'))
+                    ->orderBy('created_at', 'DESC')
+                    ->first();
+            if ($booking_details && isset($booking_details->id)) {
+                $user_name = $verify_booking->get_user_name($booking_details);
+                //$is_booking_at_location = $settings->is_booking_at_location($booking_details->id);
+                $time_pass_back = $verify_booking->is_valid_timepassback($booking_details, $device_info);
+                if (!$time_pass_back['status'] && $device_info->device_direction == 'in') {
+                    \Illuminate\Support\Facades\Session::put('error_message', 'Booking is already at location');
+                    $message = $verify_booking->get_error_message('already_at_location', '');
+                    return array(
+                        'status' => 1,
+                        'access_status' => 'denied',
+                        'message' => $message,
+                        'od_sent' => FALSE, //$settings->send_message_od($id, $message, 'rejected'),
+                        'data' => FALSE,
+                    );
+                } else if ($device_info->device_direction == 'out') {
+                    $message = $verify_booking->get_error_message('goodbye_exit', $user_name);
+                    return array(
+                        'status' => 1,
+                        'access_status' => 'allow',
+                        'od_sent' => false,
+                        'message' => $message,
+                        'data' => $booking_details->id,
+                    );
+                }
+                \Illuminate\Support\Facades\Session::put('error_message', 'Welcome');
+                $message = $verify_booking->get_error_message('welcome_entrance', $user_name);
+                return array(
+                    'status' => 1,
+                    'access_status' => 'allow',
+                    'od_sent' => false,
+                    'message' => $message,
+                    'data' => $booking_details->id,
+                );
+            } else {
+                $message = $verify_booking->get_error_message('unauthorized_whitelist');
+                return array(
+                    'status' => 1,
+                    'access_status' => 'denied',
+                    'od_sent' => false,
+                    'message' => $message,
+                    'data' => FALSE,
+                );
+            }
+        } catch (Exception $ex) {
+            $message = $verify_booking->get_error_message('unauthorized_whitelist');
+            return array(
+                'status' => 1,
+                'access_status' => 'denied',
+                'od_sent' => false,
+                'message' => $message,
+                'data' => FALSE,
+            );
+        }
+    }
+
+    function add_barcode_booking($barcode, $vip_barcode = FALSE) {
+        try {
+            if ($barcode == NULL) {
+                return FALSE;
+            }
+            $booking = new \App\Bookings();
+            if ($vip_barcode) {
+                $booking->first_name = $vip_barcode->name;
+                $booking->vehicle_num = $vip_barcode->vehicle_no;
+            }
+            $booking->type = 5;
+            $booking->barcode = $barcode;
+            $booking->save();
+            $booking_id = $booking->id;
+            $location = \App\LocationOptions::first();
+            $locationId = $location->live_id;
+            $user_id = \App\User::first()->live_id;
+            $Key = base64_encode($locationId . '_' . $user_id);
+            $data = array(
+                'barcode' => $barcode,
+                'ticket_type' => 'barcode',
+                'type' => 5,
+                'amount' => 0,
+                'payment_id' => 'Parking Ticket'
+            );
+            $http = new Client();
+            $response = $http->post('http://dev.parkingshop.com/api/store-booking-info', [
+                'form_params' => [
+                    'token' => $Key,
+                    'data' => $data
+                ],
+            ]);
+            $responseData = json_decode((string) $response->getBody(), true);
+
+            if ($responseData['success'] && count($responseData['data']) > 0) {
+                if (array_key_exists('booking_info_live_id', $responseData['data'])) {
+                    $booking_details = \App\Bookings::find($booking_id);
+
+                    $booking_details->live_id = $responseData['data']['booking_info_live_id'];
+                    $booking_details->save();
+                }
+                if (array_key_exists('booking_payment_live_id', $responseData['data'])) {
+                    $booking_payments = new \App\BookingPayments();
+                    $booking_payments->live_id = $responseData['data']['booking_payment_live_id'];
+                    $booking_payments->booking_id = $booking->id;
+                    $booking_payments->amount = 0;
+                    $booking_payments->save();
+                } else {
+                    $booking_payments = new \App\BookingPayments();
+                    $booking_payments->live_id = 0;
+                    $booking_payments->booking_id = $booking->id;
+                    $booking_payments->amount = 0;
+                    $booking_payments->save();
+                }
+            }
+            return $booking;
+        } catch (\Exception $ex) {
+            return FALSE;
+            $ex->getTrace();
+        }
+    }
+
+    function is_barcode_at_location($barcode) {
+        $booking = \App\Bookings::where('type', 5)
+                ->orderBy('created_at', 'desc')
+                ->first();
+        if (!$booking) {
+            return FALSE;
+        }
+        $settings = new Settings();
+        return $settings->is_booking_at_location($booking->id);
+    }
+
+    public function validate_barcode_exit(Request $request, $key, $id, $barcode, $vehicle_number) {
+        $settings = new Settings();
+        $verify_booking = new VerifyBookings();
+        try {
+            $valid_settings = $settings->is_valid_call($key, $id);
+            if (!$valid_settings) {
+                $message = $verify_booking->get_error_message('unknown');
+                return array(
+                    'status' => 1,
+                    'access_status' => 'error',
+                    'od_sent' => FALSE,
+                    'message' => $message,
+                    'data' => FALSE,
+                );
+            }
+            $vip_barcode = \App\Barcode::where('barcode', $barcode)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+            if ($vip_barcode) {
+                $booking_details = $this->get_vehicle_booking($vehicle_number);
+                if (!$booking_details) {
+                    $message = $verify_booking->get_error_message('unauthorized');
+                    return array(
+                        'status' => 1,
+                        'access_status' => 'denied',
+                        'od_sent' => FALSE,
+                        'message' => $message,
+                        'data' => FALSE,
+                    );
+                }
+                //$booking = \App\Bookings::find($booking_details->id);
+                $booking_details->barcode = $vip_barcode->id;
+                $booking_details->is_paid = 1;
+                //$booking_details->checkout_time = date('Y-m-d H:i:s');
+                $booking_details->save();
+                $message = $verify_booking->get_error_message('goodbye_exit');
+                $verify_vehicle = new \App\Http\Controllers\PlateReaderController\VerifyVehicle();
+                $open_gate = $verify_vehicle->open_gate_plate_reader($id, $vehicle_number, $message, 'exit');
+                return array(
+                    'status' => 1,
+                    'access_status' => 'allow',
+                    'od_sent' => FALSE,
+                    'message' => $message,
+                    'data' => $booking_details->id
+                );
+            }
+            $location = new LocationSettings();
+            $location_details = $location->get_location();
+            if (!$location_details) {
+                \Illuminate\Support\Facades\Session::put('error_message', 'Invalid');
+                $message = $verify_booking->get_error_message('unauthorized');
+                return array(
+                    'status' => 1,
+                    'access_status' => 'denied',
+                    'od_sent' => $settings->send_message_od($id, $message, 'rejected'),
+                    'message' => $message,
+                    'data' => FALSE,
+                );
+            }
+            if ($location_details->barcode_series == NULL) {
+                \Illuminate\Support\Facades\Session::put('error_message', 'Sorry, You do not have access!');
+                $message = $verify_booking->get_error_message('unauthorized');
+                return array(
+                    'status' => 1,
+                    'access_status' => 'denied',
+                    'od_sent' => $settings->send_message_od($id, $message, 'rejected'),
+                    'message' => $message,
+                    'data' => FALSE,
+                );
+            }
+            $barcode_range = explode('-', $location_details->barcode_series);
+
+            if (!is_array($barcode_range) || count($barcode_range) != 2) {
+
+                \Illuminate\Support\Facades\Session::put('error_message', 'Sorry, You do not have access!');
+                $message = $verify_booking->get_error_message('unauthorized');
+                return array(
+                    'status' => 1,
+                    'access_status' => 'denied',
+                    'od_sent' => $settings->send_message_od($id, $message, 'rejected'),
+                    'message' => $message,
+                    'data' => FALSE,
+                );
+            }
+
+
+            if ($barcode >= $barcode_range[0] && $barcode <= $barcode_range[1]) {
+
+                $is_barcode_at_location = $this->is_barcode_at_location($barcode);
+                if ($is_barcode_at_location) {
+
+                    \Illuminate\Support\Facades\Session::put('error_message', 'You are already on location!');
+                    $message = $verify_booking->get_error_message('unauthorized');
+                    return array(
+                        'status' => 1,
+                        'access_status' => 'denied',
+                        'od_sent' => $settings->send_message_od($id, $message, 'rejected'),
+                        'message' => $message,
+                        'data' => FALSE,
+                    );
+                }
+
+
+                $booking_barcode = $this->add_barcode_booking($barcode);
+                if (!$booking_barcode) {
+                    \Illuminate\Support\Facades\Session::put('error_message', 'Sorry You do not have access!');
+                    $message = $verify_booking->get_error_message('unauthorized');
+                    return array(
+                        'status' => 1,
+                        'access_status' => 'denied',
+                        'od_sent' => $settings->send_message_od($id, $message, 'rejected'),
+                        'message' => $message,
+                        'data' => FALSE,
+                    );
+                }
+                $booking_id = $booking_barcode->id;
+
+                $valid_passback = $verify_booking->is_valid_antipassback($booking_barcode, $id);
+                if (!$valid_passback['status']) {
+
+                    \Illuminate\Support\Facades\Session::put('error_message', 'You are already on location!');
+                    $message = $verify_booking->get_error_message('anti_passback_message_barcode', '');
+                    return array(
+                        'status' => 1,
+                        'access_status' => 'denied',
+                        'od_sent' => $settings->send_message_od($id, $message, 'normal'),
+                        'message' => $message,
+                        'data' => FALSE,
+                    );
+                }
+
+                \Illuminate\Support\Facades\Session::put('error_message', 'Welcome');
+                $message = $verify_booking->get_error_message('welcome_entrance', '');
+                return array(
+                    'status' => 1,
+                    'access_status' => 'allow',
+                    'od_sent' => $settings->send_message_od($id, $message, 'normal'),
+                    'message' => $message,
+                    'data' => $booking_id,
+                );
+            }
+            \Illuminate\Support\Facades\Session::put('error_message', 'Sorry You do not have access!');
+            $message = $verify_booking->get_error_message('unauthorized_whitelist');
+            return array(
+                'status' => 1,
+                'access_status' => 'denied',
+                'od_sent' => $settings->send_message_od($id, $message, 'rejected'),
+                'message' => $message,
+                'data' => FALSE,
+            );
+        } catch (\Exception $ex) {
+            $message = $verify_booking->get_error_message('unauthorized');
+            return array(
+                'status' => 1,
+                'access_status' => 'denied',
+                'od_sent' => FALSE,
+                'message' => $message,
+                'data' => FALSE,
+            );
+        }
+    }
+
+    public function get_vehicle_booking($vehicle_num) {
+        try {
+            $booking_details = \App\Bookings::where([
+                        ['vehicle_num', $vehicle_num]
+                    ])
+                    ->where('type', 4)
+                    ->orderBy('created_at', 'DESC')
+                    ->first();
+            if ($booking_details) {
+                $attendants = \App\Attendants::where('booking_id', $booking_details->id)->first();
+                if ($attendants) {
+                    $attendant_transaction = \App\AttendantTransactions::where('attendant_id', $attendants->id)
+                            ->whereNull('check_out')
+                            ->orderBy('created_at', 'DESC')
+                            ->first();
+                    if ($attendant_transaction) {
+                        return $booking_details;
+                    }
+                }
+            }
+            return FALSE;
+        } catch (\Exception $ex) {
+            return FALSE;
+        }
+    }
+
+}

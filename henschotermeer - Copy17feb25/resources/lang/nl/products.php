@@ -1,0 +1,31 @@
+﻿<?php
+
+return [
+    'person_ticket_added' => 'Persoon ticket is succesvol toegevoegd',
+    'person_ticket_updated' => 'Persoon ticket succesvol geüpdatet',
+    'day_ticket_added' => 'Dagkaart parkeren is succesvol toegevoegd',
+    'day_ticket_updated' => 'Dagkaart parkeren succesvol bijgewerkt',
+    'product_added' => 'Product succesvol toegevoegd',
+    'product_updated' => 'Product succesvol bijgewerkt',
+    'day_ticket' => 'Dagkaart parkeren',
+    'person_ticket' => 'Persoon ticket',
+    'day_ticket_twenty_four' => 'Dagkaart 24 UUR',
+    'yearly_person' => 'Jaarkaart voor personen',
+    'yearly_parking' => 'Jaarparkeerkaart',
+    'count_time' => 'Beschikbaar voor geen tijd',
+    'vehicle_allowed' => 'Aantal voertuigen toegestaan',
+    'title' => 'Titel',
+    'title_nl' => 'Titel NL',
+    'price' => 'Prijs',
+    'submit' => 'Versturen',
+    'title_en' => 'Title EN',
+    'title_nl' => 'Titel NL',
+    'type' => 'Type',
+    'price' => 'Prijs',
+    'products' => 'Producten',
+    'add_product' => 'Product toevoegen',
+    'update_product' => 'Product bijwerken',
+    'product_delete' => 'Product succesvol verwijderd',
+    'not_deleted' => 'Fout tijdens het verwijderens ',
+    'already_exist' => 'Product bestaat al. Uw gegevens zijn bijgewerkt'
+];

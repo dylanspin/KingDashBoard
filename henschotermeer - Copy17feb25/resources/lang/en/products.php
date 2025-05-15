@@ -1,0 +1,33 @@
+<?php
+
+return [
+    'person_ticket_added' => 'Person ticket added successfully',
+    'person_ticket_updated' => 'Person ticket updated successfully',
+    'day_ticket_added' => 'Day ticket added successfully',
+    'day_ticket_updated' => 'Day ticket updated successfully',
+    'product_added' => 'Product added successfully',
+    'product_updated' => 'Product updated successfully',
+    'day_ticket' => 'Day Ticket',
+    'person_ticket' => 'Person Ticket',
+    'day_ticket_twenty_four' => 'Day Ticket 24 HRS',
+    'yearly_person' => 'Yearly Person Ticket',
+    'yearly_parking' => 'Yearly Parking Ticket',
+    'count_time' => 'Allow Multiple',
+    'vehicle_allowed' => 'No of Vehicle Allowed',
+    'no_of_time' => 'No of Time Allowed',
+    'no_of_vehicle' => 'No of Vehicle Allowed',
+    'title' => 'Title',
+    'title_nl' => 'Title NL',
+    'price' => 'Price',
+    'submit' => 'Submit',
+    'title_en' => 'Title EN',
+    'title_nl' => 'Title NL',
+    'type' => 'Type',
+    'price' => 'Price',
+    'products' => 'Products',
+    'add_product' => 'Add Product',
+    'update_product' => 'Update Product',
+    'product_delete'=> 'Product Deleted Successfully',
+    'not_deleted' => 'Error while deleting ',
+    'already_exist' => 'Product already exits. Your data has been updated'
+];
